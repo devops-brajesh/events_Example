@@ -1,21 +1,21 @@
 name: First Workflow
 
-on: 
+on:
   pull_request:
-    types: [ opened, synchronize, reopened ]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
   push:
     branches:
       - main
-      - 'dev-*' # This will trigger the workflow for any branch that starts with 'dev-'
-      - 'feature/**' # This will trigger the workflow for any branch that is in the 'feature' directory
+      - 'dev-*'
+      - 'feature/**'
     paths-ignore:
-      - '.github/workflows/*'  
+      - '.github/workflows/*'
 
 jobs:
   build:
-    if: "github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -29,33 +29,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
+      - name: Build Project
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run pytest
-        run: |
-          echo "Running tests..."
+          echo "Building the project..."
+          mkdir -p dist
+          echo "Sample build output" > dist/output.txt
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist-files
           path: dist
 
-  deploy:
-    needs: test
+  test:
+    needs: build
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -68,9 +58,26 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
       - name: Run pytest
         run: |
           echo "Running tests..."
-      - name: deploy to Docker Hub
+
+  deploy:
+    needs: test
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+          path: dist
+
+      - name: Deploy to Docker Hub
         run: |
           echo "Deploying to Docker Hub..."
+          ls -la dist
