@@ -12,12 +12,9 @@ on:
     paths-ignore:
       - '.github/workflows/*'  
 
-      # This will ignore changes to the workflow file itself
-  
-    
 jobs:
   build:
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    if: "github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,4 +74,3 @@ jobs:
       - name: deploy to Docker Hub
         run: |
           echo "Deploying to Docker Hub..."
-          
